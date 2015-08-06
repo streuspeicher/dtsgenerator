@@ -4,7 +4,6 @@ import fs = require("fs");
 import path = require("path");
 import program = require("commander");
 import mkdirp = require("mkdirp");
-var asyncblock = require("asyncblock");
 
 import dtsgenerator = require("./index");
 
@@ -30,22 +29,22 @@ if (opts.args.length === 0) {
   processGenerate();
 }
 
-
 function processGenerate(): void {
-  asyncblock((flow: any) => {
+
+    var contents : { [filename : string]: string } = {}
+    
     opts.args.forEach((arg) => {
-      fs.readFile(arg, { encoding: 'utf-8' }, flow.add(arg));
+      contents[arg] = fs.readFileSync(arg, { encoding: 'utf-8' }); 
     });
-    var contents = flow.wait();
+
     var schemas: dtsgenerator.model.IJsonSchema[] = Object.keys(contents).map((key) => contents[key]);
     var result = dtsgenerator(schemas);
 
     if (opts.out) {
-      flow.sync(mkdirp(path.dirname(opts.out), flow.callback()));
-      flow.sync(fs.writeFile(opts.out, result, { encoding: 'utf-8' }, flow.callback()));
+      mkdirp.sync(path.dirname(opts.out));
+      fs.writeFileSync(opts.out, result, { encoding: 'utf-8' });
     } else {
       console.log(result);
     }
-  });
 }
 
